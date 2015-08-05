@@ -7,4 +7,5 @@ sudo pip install http://effbot.org/media/downloads/Imaging-1.1.7.tar.gz
 
 # How to Use
 In the commandline of this directory, type:
+
 python QRMatrix.py decode test.png
