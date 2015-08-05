@@ -1,15 +1,21 @@
 import PIL, numpy, sys
 from PIL import Image
 
+
 class QRMatrix:
+    """
+    The QRMatrix Class that will allow users to encode and decode QR Codes.
+    """
+
     def __init__(self, image="", message=""):
         """
         Creates a QRMatrix object. Only one parameter (image or message) can bbe filled. It's from that
         where this code will decide whether to encode or decode. If an image path is insterted, it will
         decode the image. Otherwise it will encode.
 
-        When decoding, it begins by using numpy to convert the image in binary ndary array. Afterwards,
-        it is converted into a list of lists where white space is then trimmed and the matrix is then scaled.
+        When decoding, it begins by using numpy to convert the image in binary ndary array. 0 will refer
+        to black pixels and 255 will refer to white pixels. Afterwards, it is converted into a list of lists where
+        white space is then trimmed and the matrix is then scaled.
         :param image: The path to the image.
         :param message: The message to be encoded.
         :return:
@@ -19,18 +25,66 @@ class QRMatrix:
         elif len(image) > 0:
             self.matrix = numpy.asarray(Image.open("test.png").convert('L')).tolist()
             self.__trimWhiteSpace()
-            self.__scaleMatrix()      #May need to modify later if using real images.
+            self.__scaleMatrix()  # May need to modify later if using real images.
         else:
             print("Matrix Maker has not been implemented yet")
 
     def __str__(self):
         """
-        Creates an n x n matrix representation of the QRMatrix object
-        :return: The String representation of a QRMatrix
+        Creates an n x n matrix representation of the QRMatrix object. For this representation, 255 will become 1.
+        :return: The String representation of a QRMatrix.
         """
         for row in self.matrix:
-            print [i if i!=255 else 1 for i in row]
+            print [i if i != 255 else 1 for i in row]
         return ""
+
+    def decode(self):
+        """
+        Decodes the matrix.
+
+        :return:
+        """
+        #TODO: Undo XOR 10101.., get the 3 bit masking pattern, apply pattern to entire array. Break down objects.
+        return
+
+    def encode(self):
+        """
+        Encodes the matrix.
+        :return:
+        """
+
+        return
+
+    def extractMaskPattern(self):
+        """
+        Find the mask pattern in the QR Code and returns the bit array representation of it. Remember that 255 is used
+        to represent white and 0 is used to represet black. These 3 bits will correspond with a power of 2 to create
+        a unique value.
+
+        :return: The mask pattern number.
+        """
+        #TODO: Implement the other mask patterns. Current example uses 110
+        maskPattern = self.matrix[8][2:5]
+        power = 1
+        total = 0
+        for i in maskPattern:
+            if i == 0:
+                total+= power
+            power <<= 1
+        if total == 0:
+            columnNum = 0
+            for row in self.matrix:
+                for value in row:
+                    (row*columnNum)%2 + (row*columnNum)%3==0
+        # elif total == 1:
+        # elif total == 2:
+        # elif total == 3:
+        # elif total == 4:
+        #
+        # elif total == 5:
+        # elif total == 6:
+        # elif total == 7:
+
 
     def __trimWhiteSpace(self):
         """
@@ -42,9 +96,12 @@ class QRMatrix:
         """
 
         isUsefulRow = False
-        trimmedMatrix =[]
+        trimmedMatrix = []
+        startPoint, endPoint = 0, 0
         for row in self.matrix:
             if isUsefulRow:
+                if len(trimmedMatrix) == endPoint - startPoint:
+                    break
                 trimmedMatrix += [row[startPoint: endPoint]]
             elif not self.__rowIsWhiteSpace(row):
                 isUsefulRow = True
@@ -61,16 +118,15 @@ class QRMatrix:
         wastedSpace = 0
         for num in firstRow:
             if num == 255:
-                wastedSpace+=1
+                wastedSpace += 1
             else:
                 break
         lastBlackIndex, count = wastedSpace, wastedSpace
         for num in firstRow[wastedSpace:]:
             if num == 0:
                 lastBlackIndex = count
-            count+=1
+            count += 1
         return (wastedSpace, lastBlackIndex)
-
 
     def __rowIsWhiteSpace(self, row):
         """
@@ -87,15 +143,15 @@ class QRMatrix:
     def __findRatio(self, matrix):
         """
         Finds and returns the ratio of the image to it's 1 pixel per black pixel equivalent.
-        TODO: REDO TO DO FINDER PATTERN. FIND THE NUMBER OF BLACK TO WHITE CHANGES
 
         :return: The scale of the matrix
         """
+        #TODO: Use Finder Pattern Method
 
         for row in matrix:
             scale = 0
             for num in row:
-                scale+=1
+                scale += 1
                 if num == 255:
                     return scale // 7
         raise Exception
@@ -116,11 +172,10 @@ class QRMatrix:
                 for value in row:
                     if xCount % ratio == 0:
                         newRow += [value]
-                    xCount+=1
+                    xCount += 1
                 scaledMatrix += [newRow]
-            yCount+=1
+            yCount += 1
         self.matrix = scaledMatrix
-
 
 
 if __name__ == "__main__":
