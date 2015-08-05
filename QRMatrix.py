@@ -23,7 +23,7 @@ class QRMatrix:
         if not bool(image) ^ bool(message):
             raise Exception("You can only have an image or message. Not both or neither.")
         elif len(image) > 0:
-            self.matrix = numpy.asarray(Image.open("test.png").convert('L')).tolist()
+            self.matrix = numpy.asarray(Image.open(image).convert('L')).tolist()
             self.__trimWhiteSpace()
             self.__scaleMatrix()  # May need to modify later if using real images.
         else:
