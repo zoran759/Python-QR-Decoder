@@ -1,4 +1,4 @@
-# QR-Decoder
+# Python-QR-Decoder-Encoder
 A very basic QR Decoder and Encoder written in python. 
 
 # Libraries
