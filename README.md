@@ -6,4 +6,4 @@ This requires PIL (Python Image Library). To install, type the following command
 ```sudo pip install http://effbot.org/media/downloads/Imaging-1.1.7.tar.gz```
 
 # How to Use
-In the commandline of this directory, type: ```python QRMatrix.py decode test.png```
+In the commandline of this directory, type: ```python QRMatrix.py decode samples/test.png```
