@@ -1,15 +1,20 @@
-import PIL, numpy
+import PIL, numpy, sys
 from PIL import Image
 
 class QRMatrix:
     def __init__(self, image="", message=""):
         """
-        Creates a QRMatrix object.
-        :param image:
-        :param message:
+        Creates a QRMatrix object. Only one parameter (image or message) can bbe filled. It's from that
+        where this code will decide whether to encode or decode. If an image path is insterted, it will
+        decode the image. Otherwise it will encode.
+
+        When decoding, it begins by using numpy to convert the image in binary ndary array. Afterwards,
+        it is converted into a list of lists where white space is then trimmed and the matrix is then scaled.
+        :param image: The path to the image.
+        :param message: The message to be encoded.
         :return:
         """
-        if image is "" and message is "" or (not image is "" and not message is ""):
+        if not bool(image) ^ bool(message):
             raise Exception("You can only have an image or message. Not both or neither.")
         elif len(image) > 0:
             self.matrix = numpy.asarray(Image.open("test.png").convert('L')).tolist()
@@ -26,7 +31,7 @@ class QRMatrix:
         for row in self.matrix:
             print [i if i!=255 else 1 for i in row]
         return ""
-    
+
     def __trimWhiteSpace(self):
         """
         Removes every row that only contains white space. Once row with without white space is discovered,
@@ -99,7 +104,7 @@ class QRMatrix:
         """
         Scales the matrix to the smallest size possible
 
-        :return:
+        :return: Nothing
         """
         ratio = self.__findRatio(self.matrix)
         scaledMatrix = []
@@ -119,5 +124,6 @@ class QRMatrix:
 
 
 if __name__ == "__main__":
-    test = QRMatrix("test.png")
-    print(test)
+    if str(sys.argv[1]) == "decode" or sys.argv[1] == "encode":
+        QRCode = QRMatrix(sys.argv[2])
+        print(QRCode)
