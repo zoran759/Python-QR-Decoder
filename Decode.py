@@ -55,9 +55,51 @@ def rowIsWhiteSpace(row):
             return False
     return True
 
+def findRatio(matrix):
+    """
+    Finds and returns the ratio of the image to it's 1 pixel per black pixel equivalent.
+
+    :param matrix: The QR equivalent matrix.
+    :return: The scale of the matrix
+    """
+
+    for row in matrix:
+        scale = 0
+        for num in row:
+            scale+=1
+            if num == 255:
+                return scale // 7
+    return Exception
+
+def scaleMatrix(matrix):
+    """
+    Scales the matrix to the smallest size possible
+
+    :param matrix:
+    :return:
+    """
+    ratio = findRatio(matrix)
+    scaledMatrix = []
+    yCount = 0
+    for row in matrix:
+        if yCount % ratio == 0:
+            xCount = 0
+            newRow = []
+            for value in row:
+                if xCount % ratio == 0:
+                    newRow += [value]
+                xCount+=1
+            scaledMatrix += [newRow]
+        yCount+=1
+    return scaledMatrix
+
+
+
 if __name__ == "__main__":
-    matrix = (numpy.asarray(Image.open("test.png").convert('L')).tolist())
+    matrix = numpy.asarray(Image.open("test.png").convert('L')).tolist()
     matrix = trimWhiteSpace(matrix)
+    print(findRatio(matrix))
+    matrix = scaleMatrix(matrix)
+    print len(matrix)
     for i in (matrix):
         print(i)
-    #print(trimWhiteRowSpace(matrix))
