@@ -44,8 +44,21 @@ class QRMatrix:
 
         :return:
         """
-        #TODO: Undo XOR 10101.., get the 3 bit masking pattern, apply pattern to entire array. Break down objects.
-        return
+        mask = self.extractMaskPattern()
+        decodedMatrix = []
+        y = 0
+        while y < len(self.matrix):
+            row = []
+            x = 0
+            while x < len(self.matrix[0]):
+                modifyValue = self.matrix[x][y]
+                if (modifyValue == 255):
+                    modifyValue = 1
+                row += [(~modifyValue + 2 and ~mask[x][y] + 2)]
+                x+=1
+            decodedMatrix+=[row]
+            y+=1
+
 
     def encode(self):
         """
@@ -59,11 +72,11 @@ class QRMatrix:
         """
         Find the mask pattern in the QR Code and returns the bit array representation of it. Remember that 255 is used
         to represent white and 0 is used to represet black. These 3 bits will correspond with a power of 2 to create
-        a unique value.
+        a unique value. This will then be used to create a mask patter to decode things.
 
-        :return: The mask pattern number.
+        :return: The mask pattern created.
         """
-        #TODO: Implement the other mask patterns. Current example uses 110
+
         maskPattern = self.matrix[8][2:5]
         power = 1
         total = 0
@@ -71,20 +84,48 @@ class QRMatrix:
             if i == 0:
                 total+= power
             power <<= 1
-        if total == 0:
-            columnNum = 0
-            for row in self.matrix:
-                for value in row:
-                    (row*columnNum)%2 + (row*columnNum)%3==0
-        # elif total == 1:
-        # elif total == 2:
-        # elif total == 3:
-        # elif total == 4:
-        #
-        # elif total == 5:
-        # elif total == 6:
-        # elif total == 7:
 
+        maskMatrix = []
+        j=0
+        for row in self.matrix:
+            i=0
+            newRow=[]
+            for val in self.matrix[j]:
+                if self.extractMaskNumberBoolean(total, i, j):
+                    newRow+=[0]
+                else:
+                    newRow+=[1]
+                i+=1
+            j+=1
+            maskMatrix+=[newRow]
+
+
+        return maskMatrix
+
+    def extractMaskNumberBoolean(self, number, j, i):
+        """
+        The forumlas were copied inversely so the operands have been reversed in this function. This function
+        returns a boolean that matches a certain pattern
+
+        :param number: The mask pattern number.
+        :param i: The x position.
+        :param j: The y position.
+        :return: The boolean of whether or not a spot should be inverted.
+        """
+        if number == 1:
+            return i%2==0
+        elif number == 2:
+            return ((i*j)%3 + i + j)%2==0
+        elif number == 3:
+            return (i+j)%3==0
+        elif number == 4:
+            return (i/2 + j/3) %2==0
+        elif number == 5:
+            return (i+j)%2==0
+        elif number == 6:
+            return ((i*j)%3+i*j)%2==0
+        elif number == 7:
+            return j%3==0
 
     def __trimWhiteSpace(self):
         """
@@ -182,3 +223,4 @@ if __name__ == "__main__":
     if str(sys.argv[1]) == "decode" or sys.argv[1] == "encode":
         QRCode = QRMatrix(sys.argv[2])
         print(QRCode)
+        print(QRCode.decode())
