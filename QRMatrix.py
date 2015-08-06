@@ -86,7 +86,7 @@ class QRMatrix:
                                         power=16)
         elif orientation == 2:
             total = self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row, start_column, power=1)
-            total += self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row + 2, start_column + 2,
+            total += self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row - 2, start_column,
                                         power=16)
         else:
             raise Exception("Improper orientation value.")
@@ -292,7 +292,7 @@ if __name__ == "__main__":
         print("Length of Word",QRCode.decodeBits(QRCode.demask(), 15, 19, 0))
         print("First Letter:", chr(QRCode.decodeBits(QRCode.demask(), 11, 19, 0)))
         print("Second Letter:", chr(QRCode.decodeBits(QRCode.demask(), 10, 17, 1)))
-        print("Third Letter:", chr(QRCode.decodeBits(QRCode.demask(), 10, 13, 2)))
+        print("Third Letter:", chr(QRCode.decodeBits(QRCode.demask(), 14, 17, 2)))
         print("Fourth Letter:", chr(QRCode.decodeBits(QRCode.demask(), 18, 17, 2)))
         print(QRCode.decodeBits(QRCode.demask(), 18, 13, 2))
         print(QRCode.decodeBits(QRCode.demask(), 20, 13, 2))
