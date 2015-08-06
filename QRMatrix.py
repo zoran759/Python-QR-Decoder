@@ -286,10 +286,11 @@ if __name__ == "__main__":
             print (i)
         print("Representation", QRCode.decodeBits(QRCode.demask(), 19, 19, 0))
         print("Length of Word",QRCode.decodeBits(QRCode.demask(), 15, 19, 0))
-        print("First Letter:", QRCode.decodeBits(QRCode.demask(), 11, 19, 0))
+        print("First Letter:", chr(QRCode.decodeBits(QRCode.demask(), 11, 19, 0)))
         print(QRCode.decodeBits(QRCode.demask(), 10, 17, 1))
         print(QRCode.decodeBits(QRCode.demask(), 14, 17, 1))
         print(QRCode.decodeBits(QRCode.demask(), 18, 17, 2))
         print(QRCode.decodeBits(QRCode.demask(), 18, 13, 2))
         print(QRCode.decodeBits(QRCode.demask(), 20, 13, 2))
+        print(len("supercalifragilisticexpealidotious"))
 
