@@ -46,44 +46,51 @@ class QRMatrix:
         """
         self.__demask()
 
-    def decodeBits(self, demaskedMatrix, startRow, startColumn, orientation):
+    def sum_quad_binary(self, demasked_matrix, x_cor_func, y_cor_func, start_row, start_column, power=1):
+        """
+
+        :param x_cor_func:
+        :param y_cor_func:
+        :return:
+        """
+        x, y, total = 0, 0, 0
+        while x < 2:
+            y = 0
+            while y < 2:
+                try:
+                    total += demasked_matrix[x_cor_func(start_row, x)][y_cor_func(start_column, y)] * power
+                except IndexError:
+                    y += 1
+                    continue
+                power <<= 1
+                y += 1
+            x += 1
+        return total
+
+    def decodeBits(self, demasked_matrix, start_row, start_column, orientation):
         """
         Gotta start on -1 length is greater than index by one.
-        :param demaskedMatrix: The demasked matrix.
-        :param startRow: The starting row.
-        :param startColumn: The starting columns.
+        :param demasked_matrix: The demasked matrix.
+        :param start_row: The starting row.
+        :param start_column: The starting columns.
         :param orientation: The direction of the value. 0 means going up, 1 means going left, 2 means going down.
         :return: The ASCII value.
         """
 
         if orientation == 0:
-            xCor = lambda startRow, x: startRow + x
-            yCor = lambda startColumn, y: startColumn + y
+            total = self.sum_quad_binary(demasked_matrix, operator.add, operator.add, start_row, start_column, power=1)
+            total += self.sum_quad_binary(demasked_matrix, operator.add, operator.add, start_row + 2, start_column, power=16)
         elif orientation == 1:
-            xCor = lambda startRow, x: startRow - y
-            yCor = lambda startColumn, y: startColumn + x
+            total = self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row, start_column, power=1)
+            total += self.sum_quad_binary(demasked_matrix, operator.add, operator.add, start_row - 1, start_column + 2,
+                                        power=16)
         elif orientation == 2:
-            xCor = lambda startRow, x: startRow - x
-            yCor = lambda startColumn, y: startColumn + y
+            total = self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row, start_column, power=1)
+            total += self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row + 2, start_column + 2,
+                                        power=16)
         else:
             raise Exception("Improper orientation value.")
-        x=0
-        total = 0
-        power = 1
-        while x < 4:
-            y= 0
-            while y < 2:
-                try:
-                    total += demaskedMatrix[xCor(startRow, x)][yCor(startColumn, y)] * power
-                except IndexError:
-                    y+=1
-                    continue
-                power <<= 1
-                y+=1
-            x+=1
         return total
-
-
 
     def demask(self):
         """
@@ -103,9 +110,9 @@ class QRMatrix:
                 if (modifyValue == 255):
                     modifyValue = 1
                 row += [(~modifyValue + 2 ^ ~mask[y][x] + 2)]
-                x+=1
-            decodedMatrix+=[row]
-            y+=1
+                x += 1
+            decodedMatrix += [row]
+            y += 1
         return decodedMatrix
 
     def encode(self):
@@ -131,22 +138,22 @@ class QRMatrix:
         total = 0
         for i in maskPattern:
             if i == 0:
-                total+= power
+                total += power
             power <<= 1
 
         maskMatrix = []
-        j=0
+        j = 0
         for row in self.matrix:
-            i=0
-            newRow=[]
+            i = 0
+            newRow = []
             for val in self.matrix[j]:
                 if self.extractMaskNumberBoolean(total, i, j):
-                    newRow+=[0]
+                    newRow += [0]
                 else:
-                    newRow+=[1]
-                i+=1
-            j+=1
-            maskMatrix+=[newRow]
+                    newRow += [1]
+                i += 1
+            j += 1
+            maskMatrix += [newRow]
 
         # maskMatrix = maskMatrix[:6] + [[0 for i in range(len(maskMatrix))]] + maskMatrix[6:len(maskMatrix)-1]
         # for i in range(len(maskMatrix)):
@@ -165,19 +172,19 @@ class QRMatrix:
         :return: The boolean of whether or not a spot should be inverted.
         """
         if number == 1:
-            return i%2==0
+            return i % 2 == 0
         elif number == 2:
-            return ((i*j)%3 + i + j)%2==0
+            return ((i * j) % 3 + i + j) % 2 == 0
         elif number == 3:
-            return (i+j)%3==0
+            return (i + j) % 3 == 0
         elif number == 4:
-            return (i/2 + j/3) %2==0
+            return (i / 2 + j / 3) % 2 == 0
         elif number == 5:
-            return (i+j)%2==0
+            return (i + j) % 2 == 0
         elif number == 6:
-            return ((i*j)%3+i*j)%2==0
+            return ((i * j) % 3 + i * j) % 2 == 0
         elif number == 7:
-            return j%3==0
+            return j % 3 == 0
 
     def __trimWhiteSpace(self):
         """
@@ -239,7 +246,7 @@ class QRMatrix:
 
         :return: The scale of the matrix
         """
-        #TODO: Use Finder Pattern Method
+        # TODO: Use Finder Pattern Method
 
         for row in matrix:
             scale = 0
@@ -275,18 +282,17 @@ if __name__ == "__main__":
     if str(sys.argv[1]) == "decode" or sys.argv[1] == "encode":
         QRCode = QRMatrix(sys.argv[2])
         print(QRCode)
-        print()
-        for i in QRCode.extractMaskPattern():
-            print(i)
-        print()
-        for i in QRCode.demask():
-            print (i)
+        # print()
+        # for i in QRCode.extractMaskPattern():
+        #     print(i)
+        # print()
+        # for i in QRCode.demask():
+        #     print (i)
         print("Type Representation", QRCode.decodeBits(QRCode.demask(), 19, 19, 0))
         print("Length of Word",QRCode.decodeBits(QRCode.demask(), 15, 19, 0))
         print("First Letter:", chr(QRCode.decodeBits(QRCode.demask(), 11, 19, 0)))
         print("Second Letter:", chr(QRCode.decodeBits(QRCode.demask(), 10, 17, 1)))
-        print(QRCode.decodeBits(QRCode.demask(), 14, 17, 1))
-        print(QRCode.decodeBits(QRCode.demask(), 18, 17, 2))
+        print("Third Letter:", chr(QRCode.decodeBits(QRCode.demask(), 10, 13, 2)))
+        print("Fourth Letter:", chr(QRCode.decodeBits(QRCode.demask(), 18, 17, 2)))
         print(QRCode.decodeBits(QRCode.demask(), 18, 13, 2))
         print(QRCode.decodeBits(QRCode.demask(), 20, 13, 2))
-
