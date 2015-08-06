@@ -44,7 +44,12 @@ class QRMatrix:
 
         :return:
         """
-        self.__demask()
+        self.demask()
+        limit = self.__find_usable_space()
+        demasked_matrix = self.demask()
+        self.representation = self.decodeBits(demasked_matrix, len(self.matrix) - 2, len(self.matrix) - 2, 0)
+        self.length = self.decodeBits(demasked_matrix, len(self.matrix) - 4, len(self.matrix) - 2, 0)
+        #For every rotation, do a certain
 
     def sum_quad_binary(self, demasked_matrix, x_cor_func, y_cor_func, start_row, start_column, power=1):
         """
@@ -277,6 +282,12 @@ class QRMatrix:
             yCount += 1
         self.matrix = scaledMatrix
 
+    def __find_usable_space(self):
+        """
+
+        :return:
+        """
+        return len(self.matrix) - 7 - 2
 
 if __name__ == "__main__":
     if str(sys.argv[1]) == "decode" or sys.argv[1] == "encode":
