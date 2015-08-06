@@ -1,4 +1,4 @@
-import PIL, numpy, sys
+import PIL, numpy, sys, operator
 from PIL import Image
 
 
@@ -44,21 +44,72 @@ class QRMatrix:
 
         :return:
         """
+        self.__demask()
+
+    def decodeBits(self, demaskedMatrix, startRow, startColumn, orientation):
+        """
+        Gotta start on -1 length is greater than index by one.
+        :param demaskedMatrix: The demasked matrix.
+        :param startRow: The starting row.
+        :param startColumn: The starting columns.
+        :param orientation: The direction of the value. 0 means going up, 1 means going left, 2 means going down.
+        :return: The ASCII value.
+        """
+
+        if orientation == 0:
+            xCor = lambda startRow, x: startRow + x
+            yCor = lambda startColumn, y: startColumn + y
+        elif orientation == 1:
+            xCor = lambda startRow, x: startRow - y
+            yCor = lambda startColumn, y: startColumn + x
+        elif orientation == 2:
+            xCor = lambda startRow, x: startRow - x
+            yCor = lambda startColumn, y: startColumn + y
+        else:
+            raise Exception("Improper orientation value.")
+        x=0
+        total = 0
+        power = 1
+        while x < 4:
+            y= 0
+            while y < 2:
+                try:
+                    total += demaskedMatrix[xCor(startRow, x)][yCor(startColumn, y)] * power
+                except IndexError:
+                    y+=1
+                    continue
+                power <<= 1
+                y+=1
+            x+=1
+        return total
+
+
+
+    def demask(self):
+        """
+        Removes the mask on the QR Matrix. This creates a matrix that has 1 represent black spots and 0 represent
+        white spots, the oppisite of the normal matrix. Also accounts for skipped row and column.
+
+        :return: The unmasked QR Code
+        """
         mask = self.extractMaskPattern()
+        # row = [1,0,1]
+        # self.matrix = [row, row, row]
+        # mask = [row, row, row]
         decodedMatrix = []
         y = 0
         while y < len(self.matrix):
             row = []
             x = 0
             while x < len(self.matrix[0]):
-                modifyValue = self.matrix[x][y]
+                modifyValue = self.matrix[y][x]
                 if (modifyValue == 255):
                     modifyValue = 1
-                row += [(~modifyValue + 2 and ~mask[x][y] + 2)]
+                row += [(~modifyValue + 2 ^ ~mask[y][x] + 2)]
                 x+=1
             decodedMatrix+=[row]
             y+=1
-
+        return decodedMatrix
 
     def encode(self):
         """
@@ -72,7 +123,8 @@ class QRMatrix:
         """
         Find the mask pattern in the QR Code and returns the bit array representation of it. Remember that 255 is used
         to represent white and 0 is used to represet black. These 3 bits will correspond with a power of 2 to create
-        a unique value. This will then be used to create a mask patter to decode things.
+        a unique value. This will then be used to create a mask patter to decode things. Remember that row and column
+        7 must be skipped because they are special. Last part needed to adjust for shift.
 
         :return: The mask pattern created.
         """
@@ -99,6 +151,9 @@ class QRMatrix:
             j+=1
             maskMatrix+=[newRow]
 
+        # maskMatrix = maskMatrix[:6] + [[0 for i in range(len(maskMatrix))]] + maskMatrix[6:len(maskMatrix)-1]
+        # for i in range(len(maskMatrix)):
+        #     maskMatrix[i] = maskMatrix[i][:6] + [0] + maskMatrix[i][6:len(maskMatrix)-1]
 
         return maskMatrix
 
@@ -195,7 +250,7 @@ class QRMatrix:
                 scale += 1
                 if num == 255:
                     return scale // 7
-        raise Exception
+        raise Exception("This image is not binary!")
 
     def __scaleMatrix(self):
         """
@@ -223,4 +278,18 @@ if __name__ == "__main__":
     if str(sys.argv[1]) == "decode" or sys.argv[1] == "encode":
         QRCode = QRMatrix(sys.argv[2])
         print(QRCode)
-        print(QRCode.decode())
+        print()
+        for i in QRCode.extractMaskPattern():
+            print(i)
+        print()
+        for i in QRCode.demask():
+            print (i)
+        print("Representation", QRCode.decodeBits(QRCode.demask(), 19, 19, 0))
+        print("Length of Word",QRCode.decodeBits(QRCode.demask(), 15, 19, 0))
+        print("First Letter:", QRCode.decodeBits(QRCode.demask(), 11, 19, 0))
+        print(QRCode.decodeBits(QRCode.demask(), 10, 17, 1))
+        print(QRCode.decodeBits(QRCode.demask(), 14, 17, 1))
+        print(QRCode.decodeBits(QRCode.demask(), 18, 17, 2))
+        print(QRCode.decodeBits(QRCode.demask(), 18, 13, 2))
+        print(QRCode.decodeBits(QRCode.demask(), 20, 13, 2))
+
