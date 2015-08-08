@@ -38,121 +38,78 @@ class QRMatrix:
             print [i if i != 255 else 1 for i in row]
         return ""
 
-    def decode(self):
-        """
-        Decodes the matrix.
 
-        :return:
-        """
-        demasked_matrix = self.demask()
-        self.version = ((len(self.matrix) - 21) / 4) + 1
-        self.representation = self.decodeBits(demasked_matrix, len(self.matrix) - 2, len(self.matrix) - 2, 0)
-        self.length = self.decodeBits(demasked_matrix, len(self.matrix) - 6, len(self.matrix) - 2, 0)
-        word = ""
 
-        xDisplacement, yDisplacement = len(self.matrix) -6, len(self.matrix)-2
-        orientation = 0
-        for i in range(self.length + 1):
-            word+=chr(self.decodeBits(demasked_matrix,  xDisplacement, yDisplacement, orientation))
-            if self.needs_to_rotate(xDisplacement, yDisplacement, orientation):
-                orientation+=1
-                count=0
-            if orientation > 3:
-                orientation = 0
-            xDisplacement, yDisplacement = self.get_next_coordinates(orientation, xDisplacement, yDisplacement)
-
-        return word
-
-    def needs_to_rotate(self, x, y, current_orientation):
-        """
-
-        :param current_oreintation:
-        :param blocks_evaluated_since_last_switch:
-        :return:
-        """
-        if (current_orientation == 1 or current_orientation == 3):
-            return True
-        else:
-            return self.out_of_bounds(x,y,current_orientation)
-
-    def out_of_bounds(self, x ,y, current_orientation):
-        x_new, y_new = self.get_next_coordinates(current_orientation, x, y)
-        if x_new > len(self.matrix) - 1 or y_new > len(self.matrix) - 1:
-            return True
-        elif x_new < 0 or y_new < 0:
-            return True
-        elif x_new <=9 and (y_new <= 9 or y_new >= len(self.matrix) - 8):
-            return True
-        elif x_new <=9 and y_new >= len(self.matrix) - 8:
-            return True
+    def out_of_bounds(self, x ,y):
+        if x > len(self.matrix) - 1 or y > len(self.matrix) - 1:
+            return 1 #move downward
+        elif x < 0 or y < 0:
+            return 1 #not possible
+        elif x < 9 and (y < 9 or y >= len(self.matrix) - 8):
+            return 1
+        elif x < 9 and y >= len(self.matrix) - 8:
+            return 1
         else:
             return False
 
-    def get_next_coordinates(self, orientation, x, y):
+    def decode(self):
+        list = self.traverse_matrix()
+        factor = 128
+        word = ""
+        character = 0
+        self.type = self.decode_bits(list, 0 , 4)
+        self.length = self.decode_bits(list, 4)
+        print(self.length)
+        for i in range(self.length):
+            word+=chr(self.decode_bits(list, 12 + i*8))
+
+
+        # for i in list[12:]:
+        #     character += i * factor
+        #     if factor == 1:
+        #         word+=chr(character)
+        #         factor = 256
+        #         character = 0
+        #     factor/=2
+        return word
+
+    def in_fixed_area(self, x, y):
+        if x in range(len(self.matrix) - 10 + 1,len(self.matrix) - 5 +1) and y in range(len(self.matrix) - 10 + 1,len(self.matrix) - 5 + 1):
+            return True
+        elif x == 6 or y == 6:
+            return True
+
+    def decode_bits(self, matrix, start, number_of_bits=8):
+        factor = 2 << (number_of_bits - 2)
+        character = 0
+        for i in matrix[start:start+number_of_bits]:
+            character += i * factor
+            if factor == 1:
+                print(chr(character))
+                return character
+            factor/=2
+
+    def traverse_matrix(self):
         """
 
-        :param orientation:
         :return:
         """
+        representation = []
+        x, y, direction = len(self.matrix)-1, len(self.matrix)-1, -1
+        matrix = self.demask()
+        while True:
+            if self.out_of_bounds(x,y):
+                direction,y,x = -direction,y-2,x-direction
+            if not self.in_fixed_area(x,y):
+                representation+= [matrix[x][y]]
+            if x == 0 and y ==10:
+                break
+            elif y%2!=0:
+                x,y = x+direction, y+1
+            else:
+                y-=1
+        return representation
 
-        if (orientation == 0):
-            return (x-4, y)
-        elif (orientation == 1):
-            return  (x-1, y-2)
-        elif (orientation == 2):
-            return (x+4, y)
-        else:
-            return (x+1, y-2)
-
-    def sum_quad_binary(self, demasked_matrix, x_cor_func, y_cor_func, start_row, start_column, power=1):
-        """
-
-        :param x_cor_func:
-        :param y_cor_func:
-        :return:
-        """
-        x, y, total = 0, 0, 0
-        while x < 2:
-            y = 0
-            while y < 2:
-                try:
-                    total += demasked_matrix[x_cor_func(start_row, x)][y_cor_func(start_column, y)] * power
-                except IndexError:
-                    y += 1
-                    continue
-                power <<= 1
-                y += 1
-            x += 1
-        return total
-
-    def decodeBits(self, demasked_matrix, start_row, start_column, orientation):
-        """
-        Gotta start on -1 length is greater than index by one.
-        :param demasked_matrix: The demasked matrix.
-        :param start_row: The starting row.
-        :param start_column: The starting columns.
-        :param orientation: The direction of the value. 0 means going up, 1 means going left, 2 means going down.
-        :return: The ASCII value.
-        """
-
-        if orientation == 0:
-            total = self.sum_quad_binary(demasked_matrix, operator.add, operator.add, start_row, start_column, power=1)
-            total += self.sum_quad_binary(demasked_matrix, operator.add, operator.add, start_row + 2, start_column, power=16)
-        elif orientation == 1:
-            total = self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row, start_column, power=1)
-            total += self.sum_quad_binary(demasked_matrix, operator.add, operator.add, start_row - 1, start_column + 2,
-                                        power=16)
-        elif orientation == 2:
-            total = self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row, start_column, power=1)
-            total += self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row - 2, start_column,
-                                        power=16)
-        elif orientation == 3:
-            total = self.sum_quad_binary(demasked_matrix, operator.add, operator.add, start_row, start_column, power=1)
-            total += self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row+1, start_column + 2,
-                                        power=16)
-        else:
-            raise Exception("Improper orientation value.")
-        return total
 
     def demask(self):
         """
@@ -341,9 +298,28 @@ class QRMatrix:
         """
         return len(self.matrix) - 7 - 2
 
+    def test(self):
+        numeric_matrix = QRMatrix("samples/test.png")
+        top = [1, 2, 3, 4, 5]
+        mid = [6, 7, 8, 9, 10]
+        mid2 = [11,12,13,14,15]
+        mid3=[16,17,18,19,20]
+        bot = [21,22,23,24,25]
+        matrix = [top, mid,mid2,mid3, bot]
+        return numeric_matrix.traverse_matrix(matrix) == [9,6,3,2,5,8,7,4,1]
+
 if __name__ == "__main__":
     if str(sys.argv[1]) == "decode" or sys.argv[1] == "encode":
         QRCode = QRMatrix(sys.argv[2])
+        for i in (QRCode.demask()):
+            print(i)
+        # QRCode.traverse_matrix()
+
         print(QRCode.decode())
-        print(len(QRCode.matrix))
+        # for i in QRCode.demask():
+        #     print(i)
+        # print(len(QRCode.matrix))
+        # import doctest
+        # doctest.testmod()
+        #print(QRCode.test())
 
