@@ -45,25 +45,25 @@ class QRMatrix:
         :return:
         """
         demasked_matrix = self.demask()
-        self.representation = chr(self.decodeBits(demasked_matrix, len(self.matrix) - 2, len(self.matrix) - 2, 0))
+        self.version = ((len(self.matrix) - 21) / 4) + 1
+        self.representation = self.decodeBits(demasked_matrix, len(self.matrix) - 2, len(self.matrix) - 2, 0)
         self.length = self.decodeBits(demasked_matrix, len(self.matrix) - 6, len(self.matrix) - 2, 0)
         word = ""
-        count = 1
+
         xDisplacement, yDisplacement = len(self.matrix) -6, len(self.matrix)-2
         orientation = 0
         for i in range(self.length + 1):
             word+=chr(self.decodeBits(demasked_matrix,  xDisplacement, yDisplacement, orientation))
-            if self.needs_to_rotate(orientation, count):
+            if self.needs_to_rotate(xDisplacement, yDisplacement, orientation):
                 orientation+=1
                 count=0
             if orientation > 3:
                 orientation = 0
             xDisplacement, yDisplacement = self.get_next_coordinates(orientation, xDisplacement, yDisplacement)
 
-            count+=1
         return word
 
-    def needs_to_rotate(self, current_orientation, blocks_evaluated_since_last_switch):
+    def needs_to_rotate(self, x, y, current_orientation):
         """
 
         :param current_oreintation:
@@ -72,7 +72,21 @@ class QRMatrix:
         """
         if (current_orientation == 1 or current_orientation == 3):
             return True
-        return blocks_evaluated_since_last_switch % ((len(self.matrix) - 11) / 4) == 0
+        else:
+            return self.out_of_bounds(x,y,current_orientation)
+
+    def out_of_bounds(self, x ,y, current_orientation):
+        x_new, y_new = self.get_next_coordinates(current_orientation, x, y)
+        if x_new > len(self.matrix) - 1 or y_new > len(self.matrix) - 1:
+            return True
+        elif x_new < 0 or y_new < 0:
+            return True
+        elif x_new <=9 and (y_new <= 9 or y_new >= len(self.matrix) - 8):
+            return True
+        elif x_new <=9 and y_new >= len(self.matrix) - 8:
+            return True
+        else:
+            return False
 
     def get_next_coordinates(self, orientation, x, y):
         """
@@ -331,4 +345,5 @@ if __name__ == "__main__":
     if str(sys.argv[1]) == "decode" or sys.argv[1] == "encode":
         QRCode = QRMatrix(sys.argv[2])
         print(QRCode.decode())
+        print(len(QRCode.matrix))
 
