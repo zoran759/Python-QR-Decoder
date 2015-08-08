@@ -44,12 +44,51 @@ class QRMatrix:
 
         :return:
         """
-        self.demask()
-        limit = self.__find_usable_space()
         demasked_matrix = self.demask()
-        self.representation = self.decodeBits(demasked_matrix, len(self.matrix) - 2, len(self.matrix) - 2, 0)
-        self.length = self.decodeBits(demasked_matrix, len(self.matrix) - 4, len(self.matrix) - 2, 0)
-        #For every rotation, do a certain
+        self.representation = chr(self.decodeBits(demasked_matrix, len(self.matrix) - 2, len(self.matrix) - 2, 0))
+        self.length = self.decodeBits(demasked_matrix, len(self.matrix) - 6, len(self.matrix) - 2, 0)
+        word = ""
+        count = 1
+        xDisplacement, yDisplacement = len(self.matrix) -6, len(self.matrix)-2
+        orientation = 0
+        for i in range(self.length + 1):
+            word+=chr(self.decodeBits(demasked_matrix,  xDisplacement, yDisplacement, orientation))
+            if self.needs_to_rotate(orientation, count):
+                orientation+=1
+                count=0
+            if orientation > 3:
+                orientation = 0
+            xDisplacement, yDisplacement = self.get_next_coordinates(orientation, xDisplacement, yDisplacement)
+
+            count+=1
+        return word
+
+    def needs_to_rotate(self, current_orientation, blocks_evaluated_since_last_switch):
+        """
+
+        :param current_oreintation:
+        :param blocks_evaluated_since_last_switch:
+        :return:
+        """
+        if (current_orientation == 1 or current_orientation == 3):
+            return True
+        return blocks_evaluated_since_last_switch % ((len(self.matrix) - 11) / 4) == 0
+
+    def get_next_coordinates(self, orientation, x, y):
+        """
+
+        :param orientation:
+        :return:
+        """
+
+        if (orientation == 0):
+            return (x-4, y)
+        elif (orientation == 1):
+            return  (x-1, y-2)
+        elif (orientation == 2):
+            return (x+4, y)
+        else:
+            return (x+1, y-2)
 
     def sum_quad_binary(self, demasked_matrix, x_cor_func, y_cor_func, start_row, start_column, power=1):
         """
@@ -92,6 +131,10 @@ class QRMatrix:
         elif orientation == 2:
             total = self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row, start_column, power=1)
             total += self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row - 2, start_column,
+                                        power=16)
+        elif orientation == 3:
+            total = self.sum_quad_binary(demasked_matrix, operator.add, operator.add, start_row, start_column, power=1)
+            total += self.sum_quad_binary(demasked_matrix, operator.sub, operator.add, start_row+1, start_column + 2,
                                         power=16)
         else:
             raise Exception("Improper orientation value.")
@@ -159,11 +202,6 @@ class QRMatrix:
                 i += 1
             j += 1
             maskMatrix += [newRow]
-
-        # maskMatrix = maskMatrix[:6] + [[0 for i in range(len(maskMatrix))]] + maskMatrix[6:len(maskMatrix)-1]
-        # for i in range(len(maskMatrix)):
-        #     maskMatrix[i] = maskMatrix[i][:6] + [0] + maskMatrix[i][6:len(maskMatrix)-1]
-
         return maskMatrix
 
     def extractMaskNumberBoolean(self, number, j, i):
@@ -292,18 +330,5 @@ class QRMatrix:
 if __name__ == "__main__":
     if str(sys.argv[1]) == "decode" or sys.argv[1] == "encode":
         QRCode = QRMatrix(sys.argv[2])
-        print(QRCode)
-        # print()
-        # for i in QRCode.extractMaskPattern():
-        #     print(i)
-        # print()
-        # for i in QRCode.demask():
-        #     print (i)
-        print("Type Representation", QRCode.decodeBits(QRCode.demask(), 19, 19, 0))
-        print("Length of Word",QRCode.decodeBits(QRCode.demask(), 15, 19, 0))
-        print("First Letter:", chr(QRCode.decodeBits(QRCode.demask(), 11, 19, 0)))
-        print("Second Letter:", chr(QRCode.decodeBits(QRCode.demask(), 10, 17, 1)))
-        print("Third Letter:", chr(QRCode.decodeBits(QRCode.demask(), 14, 17, 2)))
-        print("Fourth Letter:", chr(QRCode.decodeBits(QRCode.demask(), 18, 17, 2)))
-        print(QRCode.decodeBits(QRCode.demask(), 18, 13, 2))
-        print(QRCode.decodeBits(QRCode.demask(), 20, 13, 2))
+        print(QRCode.decode())
+
