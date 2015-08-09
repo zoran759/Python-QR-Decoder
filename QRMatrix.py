@@ -1,4 +1,6 @@
-import PIL, numpy, sys, operator
+import sys
+
+import numpy
 from PIL import Image
 
 
@@ -41,9 +43,7 @@ class QRMatrix:
             print [i if i != 255 else 1 for i in row]
         return ""
 
-
-
-    def __out_of_bounds(self, x ,y):
+    def __out_of_bounds(self, x, y):
         """
         This function will determine if the matrix is out of bounds. If used on a micro qr code, this function will need
         to be modified. The first and second clauses check if the matrix has stepped out of bounds. The latter two
@@ -72,12 +72,10 @@ class QRMatrix:
         """
         zig_zag_traversal = self.__traverse_matrix()
         word = ""
-        self.representation = self.__decode_bits(zig_zag_traversal, 0 , 4)
+        self.representation = self.__decode_bits(zig_zag_traversal, 0, 4)
         self.length = self.__decode_bits(zig_zag_traversal, 4)
         for i in range(self.length):
-            print("Current bit:", self.__decode_bits(zig_zag_traversal, 12 + i*8))
-            print(word)
-            word+=chr(self.__decode_bits(zig_zag_traversal, 12 + i*8))
+            word += chr(self.__decode_bits(zig_zag_traversal, 12 + i * 8))
         return word
 
     def __within_orientation_markers(self, x, y):
@@ -89,8 +87,9 @@ class QRMatrix:
         :param y: The current y position.
         :return: A boolean of whether or not the x and y position are touching the markers.
         """
-        if self.version > 1 :
-            return x in range(len(self.matrix) - 10 + 1,len(self.matrix) - 5 +1) and y in range(len(self.matrix) - 10 + 1,len(self.matrix) - 5 + 1)
+        if self.version > 1:
+            return x in range(len(self.matrix) - 10 + 1, len(self.matrix) - 5 + 1) and y in range(
+                len(self.matrix) - 10 + 1, len(self.matrix) - 5 + 1)
 
     def __in_fixed_area(self, x, y):
         """
@@ -118,11 +117,11 @@ class QRMatrix:
         """
         factor = 2 << (number_of_bits - 2)
         character = 0
-        for i in traversal[start:start+number_of_bits]:
+        for i in traversal[start:start + number_of_bits]:
             character += i * factor
             if factor == 1:
                 return character
-            factor/=2
+            factor /= 2
 
     def __traverse_matrix(self):
         """
@@ -134,21 +133,20 @@ class QRMatrix:
         :return: A traversed list of values.
         """
         traversal = []
-        x, y, direction = len(self.matrix)-1, len(self.matrix)-1, -1
+        x, y, direction = len(self.matrix) - 1, len(self.matrix) - 1, -1
         matrix = self.__demask()
         while True:
-            if self.__out_of_bounds(x,y):
-                direction,y,x = -direction,y-2,x-direction
-            if not self.__in_fixed_area(x,y):
-                traversal+= [matrix[x][y]]
+            if self.__out_of_bounds(x, y):
+                direction, y, x = -direction, y - 2, x - direction
+            if not self.__in_fixed_area(x, y):
+                traversal += [matrix[x][y]]
             if y < 8:
                 break
-            elif y%2!=0:
-                x,y = x+direction, y+1
+            elif y % 2 != 0:
+                x, y = x + direction, y + 1
             else:
-                y-=1
+                y -= 1
         return traversal
-
 
     def __demask(self):
         """
@@ -211,8 +209,7 @@ class QRMatrix:
                 i += 1
             j += 1
             maskMatrix += [newRow]
-        for i in maskMatrix:
-            print(i)
+
         return maskMatrix
 
     def __extractMaskNumberBoolean(self, number, j, i):
@@ -241,6 +238,8 @@ class QRMatrix:
             return ((i * j) % 3 + i * j) % 2 == 0
         elif number == 7:
             return j % 3 == 0
+        else:
+            raise Exception("Unknown Mask Pattern")
 
     def __trimWhiteSpace(self):
         """
@@ -332,8 +331,7 @@ class QRMatrix:
             yCount += 1
         self.matrix = scaledMatrix
 
+
 if __name__ == "__main__":
-        QRCode = QRMatrix(sys.argv[1], sys.argv[2])
-        print(QRCode.decode())
-
-
+    QRCode = QRMatrix(sys.argv[1], sys.argv[2])
+    print(QRCode.decode())
