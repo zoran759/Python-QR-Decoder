@@ -75,6 +75,8 @@ class QRMatrix:
         self.representation = self.__decode_bits(zig_zag_traversal, 0 , 4)
         self.length = self.__decode_bits(zig_zag_traversal, 4)
         for i in range(self.length):
+            print("Current bit:", self.__decode_bits(zig_zag_traversal, 12 + i*8))
+            print(word)
             word+=chr(self.__decode_bits(zig_zag_traversal, 12 + i*8))
         return word
 
@@ -104,19 +106,19 @@ class QRMatrix:
         elif x == 6 or y == 6:
             return True
 
-    def __decode_bits(self, matrix, start, number_of_bits=8):
+    def __decode_bits(self, traversal, start, number_of_bits=8):
         """
         This function decodes the bits. The starting value will correspond with the highest power of 2. This function
         will return the character generated from the bits.
 
-        :param matrix: The __demasked matrix.
+        :param traversal: The traversal of the matrix.
         :param start: The starting index to decode.
         :param number_of_bits: The number of bits to generate a character. Currently set to one byte.
         :return: The string representation of the bits.
         """
         factor = 2 << (number_of_bits - 2)
         character = 0
-        for i in matrix[start:start+number_of_bits]:
+        for i in traversal[start:start+number_of_bits]:
             character += i * factor
             if factor == 1:
                 return character
@@ -139,7 +141,7 @@ class QRMatrix:
                 direction,y,x = -direction,y-2,x-direction
             if not self.__in_fixed_area(x,y):
                 traversal+= [matrix[x][y]]
-            if x == 0 and y ==10:
+            if y < 8:
                 break
             elif y%2!=0:
                 x,y = x+direction, y+1
@@ -196,7 +198,6 @@ class QRMatrix:
             if i == 0:
                 total += power
             power <<= 1
-
         maskMatrix = []
         j = 0
         for row in self.matrix:
@@ -210,6 +211,8 @@ class QRMatrix:
                 i += 1
             j += 1
             maskMatrix += [newRow]
+        for i in maskMatrix:
+            print(i)
         return maskMatrix
 
     def __extractMaskNumberBoolean(self, number, j, i):
@@ -222,7 +225,9 @@ class QRMatrix:
         :param j: The y position.
         :return: The boolean of whether or not a spot should be inverted.
         """
-        if number == 1:
+        if number == 0:
+            return (i * j) % 2 + (i * j) % 3 == 0
+        elif number == 1:
             return i % 2 == 0
         elif number == 2:
             return ((i * j) % 3 + i + j) % 2 == 0
