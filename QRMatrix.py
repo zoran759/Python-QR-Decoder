@@ -8,6 +8,11 @@ class QRMatrix:
     """
     The QRMatrix Class that will allow users to encode and decode QR Codes.
     """
+    type_of_encoding = {0 : "End", 1:"Numeric", 2:"Alphanumeric", 3:"Structred Append", 4:"Byte", 5:"FNC1 in First",
+                        7:"Extended Channel Interpretation", 8:"Kanji", 9:"FNC1 in Second"}
+    pad_bytes = {0 : 236, 1: 17}
+    error_correction_levels = {3: "L", 1:"M", 2:"Q", 0:"H"}
+
 
     def __init__(self, decode_or_encode, image_or_text="", ):
         """
@@ -26,9 +31,9 @@ class QRMatrix:
         """
         if decode_or_encode == "decode":
             self.matrix = numpy.asarray(Image.open(image_or_text).convert('L')).tolist()
-            self.__trimWhiteSpace()
-            self.__scaleMatrix()
-            self.version = ((len(self.matrix) - 21) / 4) + 1
+            self.__trim_white_space()
+            self.__scale_matrix()
+            self.version = ((len(self.matrix) - 21) // 4) + 1
         elif decode_or_encode == "encode":
             print("Matrix Maker has not been implemented yet")
 
@@ -63,6 +68,13 @@ class QRMatrix:
         else:
             return False
 
+    def __get_error_correction_level(self, traversal):
+        """
+        Extracts the error correction level from the matrix.
+        :return: The error correction level L, M, Q, or H.
+        """
+
+        return self.error_correction_levels[self.matrix[8][0] * 1 + self.matrix[8][1] * 2]
     def decode(self):
         """
         Decodes the matrix. First, this preforms a zigzag traversal over the entirety of the matrix. The first 4 bits
@@ -72,10 +84,25 @@ class QRMatrix:
         """
         zig_zag_traversal = self.__traverse_matrix()
         word = ""
-        self.representation = self.__decode_bits(zig_zag_traversal, 0, 4)
-        self.length = self.__decode_bits(zig_zag_traversal, 4)
-        for i in range(self.length):
-            word += chr(self.__decode_bits(zig_zag_traversal, 12 + i * 8))
+        try:
+            encoding_mode = self.type_of_encoding[self.__decode_bits(zig_zag_traversal, 0, 4)]
+        except KeyError:
+            print("Non-existing encode mode.")
+
+        length = self.__decode_bits(zig_zag_traversal, 4)
+        if encoding_mode == "Byte" or encoding_mode == "Japanese":
+            bytes=8
+            decode_function = chr
+        elif encoding_mode == "Alphanumeric":
+            bytes = 9
+            #decode_function =
+        elif encoding_mode == "Numeric":
+            bytes=10
+            #decode_function =
+        else:
+            raise Exception(encoding_mode + " has not yet been implemented")
+        for i in range(length):
+            word += decode_function(self.__decode_bits(zig_zag_traversal, 12 + i * bytes))
         return word
 
     def __within_orientation_markers(self, x, y):
@@ -241,7 +268,7 @@ class QRMatrix:
         else:
             raise Exception("Unknown Mask Pattern")
 
-    def __trimWhiteSpace(self):
+    def __trim_white_space(self):
         """
         Removes every row that only contains white space. Once row with without white space is discovered,
         find the starting location of the black pixel and the last location of the black pixel. Use these variables
@@ -260,10 +287,10 @@ class QRMatrix:
                 trimmedMatrix += [row[startPoint: endPoint]]
             elif not self.__rowIsWhiteSpace(row):
                 isUsefulRow = True
-                startPoint, endPoint = self.__extractEndPoints(row)
+                startPoint, endPoint = self.__extract_end_points(row)
         self.matrix = trimmedMatrix
 
-    def __extractEndPoints(self, firstRow):
+    def __extract_end_points(self, firstRow):
         """
         Extracts the dimensions of the matrix by utilizing the first row. This finds the first black spot and the last.
 
@@ -295,7 +322,7 @@ class QRMatrix:
                 return False
         return True
 
-    def __findRatio(self, matrix):
+    def __find_ratio(self, matrix):
         """
         Finds and returns the ratio of the image to it's 1 pixel per black pixel equivalent.
 
@@ -310,13 +337,13 @@ class QRMatrix:
                     return scale // 7
         raise Exception("This image is not binary!")
 
-    def __scaleMatrix(self):
+    def __scale_matrix(self):
         """
         Scales the matrix to the smallest size possible
 
         :return: Nothing. This resizes the matrix.
         """
-        ratio = self.__findRatio(self.matrix)
+        ratio = self.__find_ratio(self.matrix)
         scaledMatrix = []
         yCount = 0
         for row in self.matrix:
