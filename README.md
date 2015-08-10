@@ -10,3 +10,6 @@ In the commandline of this directory, type: ```python QRMatrix.py decode samples
 
 # To Do
 Create the encoding feature and program the Reed–Solomon Error Correction algorithm. Doing the latter will allow for the decoding of > version 4 QR codes. 
+
+# Error Detection Algorithm Guide
+http://www.thonky.com/qr-code-tutorial/structure-final-message
