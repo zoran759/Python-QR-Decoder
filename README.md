@@ -7,3 +7,6 @@ This requires PIL (Python Image Library). To install, type the following command
 
 # How to Use
 In the commandline of this directory, type: ```python QRMatrix.py decode samples/test.png```
+
+# To Do
+Create the encoding feature and program the Reed–Solomon Error Correction algorithm. Doing the latter will allow for the decoding of > version 4 QR codes. 
