@@ -1,4 +1,4 @@
-# Python-QR-Decoder-Encoder
+# Python-QR-Decoder
 A very basic QR Decoder and Encoder written in python. The decoding process begins by modifying the image so that it removes all white space outside of the QR Code and scales it to a 1 block to pixel ratio. After that, it removes the mask placed on the QR code. From that point on, the demasked QR code is then traversed. This traversal is then broken up into 8 bits and processed. Currently, this application can only decode and works only with binary and QR versions less than 4. More work will be added to complete this.
 
 # Libraries
